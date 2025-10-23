@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Menu, X, Plus, Edit2, Trash2, Save, LogOut, User, Briefcase, FileText, Mail, Settings, Eye, Code, ExternalLink, Calendar, Tag } from 'lucide-react';
 import ReactDOM from 'react-dom/client';
 import './index.css';
@@ -28,11 +28,26 @@ export default function PortfolioAdminPanel() {
   const [editingBlog, setEditingBlog] = useState(null);
   const [editingProfile, setEditingProfile] = useState(false);
   const [contact, setContact] = useState({ name: '', email: '', message: '' });
+  const [adminCreds, setAdminCreds] = useState({ username: 'Mironshox_adminX', password: 'Mir0n$h0x!@2025' });
+  const [showCredsModal, setShowCredsModal] = useState(false);
+  const [credsDraft, setCredsDraft] = useState({ username: 'Mironshox_adminX', password: 'Mir0n$h0x!@2025' });
+  const [toast, setToast] = useState({ visible: false, text: '', type: 'success' });
+  const [secretClicks, setSecretClicks] = useState(0);
+  const secretTimer = useRef(null);
+
+  const triggerToast = (text, type = 'success') => {
+    setToast({ visible: true, text, type });
+    window.clearTimeout(triggerToast._t);
+    triggerToast._t = window.setTimeout(() => {
+      setToast((prev) => ({ ...prev, visible: false }));
+    }, 3000);
+  };
 
   useEffect(() => {
     const savedProjects = localStorage.getItem('portfolio_projects');
     const savedBlogs = localStorage.getItem('portfolio_blogs');
     const savedProfile = localStorage.getItem('portfolio_profile');
+    const savedCreds = localStorage.getItem('admin_credentials');
     
     if (savedProjects) setProjects(JSON.parse(savedProjects));
     else {
@@ -104,6 +119,7 @@ export default function PortfolioAdminPanel() {
     }
     
     if (savedProfile) setProfile(JSON.parse(savedProfile));
+    if (savedCreds) setAdminCreds(JSON.parse(savedCreds));
   }, []);
 
   const saveProjects = (newProjects) => {
@@ -123,13 +139,13 @@ export default function PortfolioAdminPanel() {
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (loginData.username === 'admin' && loginData.password === 'admin123') {
+    if (loginData.username === adminCreds.username && loginData.password === adminCreds.password) {
       setIsAdmin(true);
       setShowLogin(false);
       setCurrentPage('admin');
       setLoginData({ username: '', password: '' });
     } else {
-      alert('Username: admin, Password: admin123');
+      alert('Noto\'g\'ri login yoki parol');
     }
   };
 
@@ -137,6 +153,29 @@ export default function PortfolioAdminPanel() {
     setIsAdmin(false);
     setCurrentPage('home');
     setAdminPage('dashboard');
+  };
+
+  const handleSaveCreds = () => {
+    if (!credsDraft.username || !credsDraft.password) return;
+    setAdminCreds(credsDraft);
+    localStorage.setItem('admin_credentials', JSON.stringify(credsDraft));
+    setShowCredsModal(false);
+  };
+
+  const handleSecretClick = () => {
+    if (secretTimer.current) {
+      clearTimeout(secretTimer.current);
+    }
+    setSecretClicks((c) => {
+      const next = c + 1;
+      if (next >= 5) {
+        setCredsDraft(adminCreds);
+        setShowCredsModal(true);
+        return 0;
+      }
+      secretTimer.current = setTimeout(() => setSecretClicks(0), 3000);
+      return next;
+    });
   };
 
   const handleAddProject = () => {
@@ -232,10 +271,10 @@ export default function PortfolioAdminPanel() {
       });
 
       if (!res.ok) throw new Error('Telegram API error');
-      alert('Xabar yuborildi!');
+      triggerToast("Xabaringiz adminga yuborildi", 'success');
       setContact({ name: '', email: '', message: '' });
     } catch (err) {
-      alert('Xabar yuborishda xatolik. Iltimos, keyinroq urinib ko\'ring.');
+      triggerToast("Xabar yuborishda xatolik. Iltimos, keyinroq urinib ko'ring.", 'error');
       console.error(err);
     }
   };
@@ -306,8 +345,19 @@ export default function PortfolioAdminPanel() {
 
           <main className="flex-1 p-8">
             {adminPage === 'dashboard' && (
-              <div>
+              <div className="relative group">
                 <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
+                <button
+                  aria-label="hidden-settings"
+                  onClick={handleSecretClick}
+                  className="absolute top-0 right-0 w-8 h-8 rounded-full flex items-center justify-center 
+                             opacity-10 group-hover:opacity-60 hover:opacity-100 focus:opacity-100 
+                             hover:bg-gray-200/70 active:bg-gray-300/80 transition 
+                             ring-0 focus:ring-2 focus:ring-gray-300"
+                  title="Sozlamalar"
+                >
+                  <Settings className="w-4 h-4 text-gray-700" />
+                </button>
                 <div className="grid grid-cols-3 gap-6 mb-8">
                   <div className="bg-white p-6 rounded-xl shadow-sm">
                     <div className="flex items-center justify-between mb-4">
@@ -767,6 +817,44 @@ export default function PortfolioAdminPanel() {
             )}
           </main>
         </div>
+        {showCredsModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold">Admin parolini o'zgartirish</h3>
+                <button onClick={() => setShowCredsModal(false)} className="p-2 hover:bg-gray-100 rounded-lg">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                  <input
+                    type="text"
+                    value={credsDraft.username}
+                    onChange={(e) => setCredsDraft({ ...credsDraft, username: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Yangi username"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Parol</label>
+                  <input
+                    type="text"
+                    value={credsDraft.password}
+                    onChange={(e) => setCredsDraft({ ...credsDraft, password: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="Yangi parol"
+                  />
+                </div>
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowCredsModal(false)} className="px-4 py-2 bg-gray-200 rounded-lg">Bekor qilish</button>
+                  <button onClick={handleSaveCreds} className="px-4 py-2 bg-blue-600 text-white rounded-lg">Saqlash</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -886,7 +974,7 @@ export default function PortfolioAdminPanel() {
                   value={loginData.username}
                   onChange={(e) => setLoginData({...loginData, username: e.target.value})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="admin"
+                  placeholder="Loginni kiriting"
                 />
               </div>
               <div>
@@ -898,7 +986,7 @@ export default function PortfolioAdminPanel() {
                   value={loginData.password}
                   onChange={(e) => setLoginData({...loginData, password: e.target.value})}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="admin123"
+                  placeholder="Parolni kiriting"
                 />
               </div>
               <button
@@ -908,13 +996,21 @@ export default function PortfolioAdminPanel() {
                 Kirish
               </button>
               <p className="text-sm text-gray-500 text-center">
-                Demo: username: admin, password: admin123
+                Iltimos, login va parolni kiriting
               </p>
             </form>
           </div>
         </div>
       )}
-
+      {toast.visible && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-4 rounded-xl shadow-lg border backdrop-blur-sm transition ${
+          toast.type === 'success' ? 'bg-green-100/90 text-green-900 border-green-300' : 'bg-red-100/90 text-red-900 border-red-300'
+        }`}
+          style={{ fontWeight: 600 }}
+        >
+          {toast.text}
+        </div>
+      )}
       <main className="pt-20">
         {currentPage === 'home' && (
           <div>
@@ -1136,6 +1232,15 @@ export default function PortfolioAdminPanel() {
         )}
       </main>
 
+      {toast.visible && (
+        <div className={`fixed top-6 right-6 z-50 px-5 py-4 rounded-xl shadow-lg border backdrop-blur-sm transition ${
+          toast.type === 'success' ? 'bg-green-100/90 text-green-900 border-green-300' : 'bg-red-100/90 text-red-900 border-red-300'
+        }`}
+          style={{ fontWeight: 600 }}
+        >
+          {toast.text}
+        </div>
+      )}
       <footer className="bg-gray-900 text-white py-12 mt-20">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <p className="text-gray-400">
