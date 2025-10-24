@@ -9,6 +9,7 @@ export default function PortfolioAdminPanel() {
   const [currentPage, setCurrentPage] = useState('home');
   const [adminPage, setAdminPage] = useState('dashboard');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminSidebarOpen, setAdminSidebarOpen] = useState(false);
   
   const [loginData, setLoginData] = useState({ username: '', password: '' });
   
@@ -279,11 +280,39 @@ export default function PortfolioAdminPanel() {
     }
   };
 
+  // Media helper functions for Blog previews
+  const isVideoUrl = (url) => {
+    if (!url) return false;
+    const u = url.toLowerCase();
+    return /\.(mp4|webm|ogg)(\?.*)?$/.test(u) || u.includes('youtube.com') || u.includes('youtu.be') || u.includes('vimeo.com');
+  };
+
+  const toYouTubeEmbed = (url) => {
+    if (!url) return null;
+    try {
+      if (url.includes('youtube.com/watch')) {
+        const v = new URL(url).searchParams.get('v');
+        return v ? `https://www.youtube.com/embed/${v}` : null;
+      }
+      if (url.includes('youtu.be/')) {
+        const id = url.split('youtu.be/')[1]?.split(/[?&#]/)[0];
+        return id ? `https://www.youtube.com/embed/${id}` : null;
+      }
+    } catch {}
+    return null;
+  };
+
+  const toVimeoEmbed = (url) => {
+    if (!url || !url.includes('vimeo.com')) return null;
+    const id = url.split('vimeo.com/')[1]?.split(/[?&#]/)[0];
+    return id ? `https://player.vimeo.com/video/${id}` : null;
+  };
+
   if (currentPage === 'admin' && isAdmin) {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex">
-          <aside className="w-64 bg-gray-900 text-white min-h-screen p-6">
+          <aside className="hidden lg:block w-64 bg-gray-900 text-white min-h-screen p-6">
             <div className="mb-8">
               <h2 className="text-xl font-bold mb-2">Admin Panel</h2>
               <p className="text-sm text-gray-400">{profile.name}</p>
@@ -343,7 +372,52 @@ export default function PortfolioAdminPanel() {
             </nav>
           </aside>
 
-          <main className="flex-1 p-8">
+          {/* Mobile admin topbar with hamburger */}
+          <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-gray-900 text-white px-4 py-3 flex items-center justify-between">
+            <div className="font-semibold text-white">Admin Panel</div>
+            <button
+              onClick={() => setAdminSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-white/10"
+              aria-label="Open admin menu"
+            >
+              <Menu className="w-6 h-6 text-white" />
+            </button>
+          </div>
+          {/* Mobile overlay drawer */}
+          {adminSidebarOpen && (
+            <div className="lg:hidden fixed inset-0 z-50">
+              <div className="absolute inset-0 bg-black/50" onClick={() => setAdminSidebarOpen(false)} />
+              <div className="relative w-72 max-w-[85%] h-full bg-gray-900 text-white p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="text-lg font-bold">Admin Panel</div>
+                  <button className="p-2 hover:bg-white/10 rounded-lg" onClick={() => setAdminSidebarOpen(false)}>
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <nav className="space-y-2">
+                  <button onClick={() => { setAdminPage('dashboard'); setAdminSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${adminPage === 'dashboard' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <Settings className="w-5 h-5" />Dashboard
+                  </button>
+                  <button onClick={() => { setAdminPage('projects'); setAdminSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${adminPage === 'projects' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <Briefcase className="w-5 h-5" />Loyihalar
+                  </button>
+                  <button onClick={() => { setAdminPage('blogs'); setAdminSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${adminPage === 'blogs' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <FileText className="w-5 h-5" />Blog
+                  </button>
+                  <button onClick={() => { setAdminPage('profile'); setAdminSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition ${adminPage === 'profile' ? 'bg-blue-600' : 'hover:bg-gray-800'}`}>
+                    <User className="w-5 h-5" />Profil
+                  </button>
+                  <button onClick={() => { setCurrentPage('home'); setAdminSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-gray-800 transition">
+                    <Eye className="w-5 h-5" />Saytni ko'rish
+                  </button>
+                  <button onClick={() => { handleLogout(); setAdminSidebarOpen(false); }} className="w-full flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-600 transition mt-8">
+                    <LogOut className="w-5 h-5" />Chiqish
+                  </button>
+                </nav>
+              </div>
+            </div>
+          )}
+          <main className="flex-1 p-8 lg:pt-8 pt-16">
             {adminPage === 'dashboard' && (
               <div className="relative group">
                 <h1 className="text-3xl font-bold mb-8">Dashboard</h1>
@@ -358,7 +432,7 @@ export default function PortfolioAdminPanel() {
                 >
                   <Settings className="w-4 h-4 text-gray-700" />
                 </button>
-                <div className="grid grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 mb-8">
                   <div className="bg-white p-6 rounded-xl shadow-sm">
                     <div className="flex items-center justify-between mb-4">
                       <Briefcase className="w-8 h-8 text-blue-600" />
@@ -384,17 +458,17 @@ export default function PortfolioAdminPanel() {
 
                 <div className="bg-white p-6 rounded-xl shadow-sm">
                   <h2 className="text-xl font-bold mb-4">Tezkor havolalar</h2>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-2 gap-4 max-[600px]:grid-cols-1">
                     <button
                       onClick={() => { setAdminPage('projects'); handleAddProject(); }}
-                      className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
+                      className="flex items-center gap-3 p-4 max-[600px]:py-6 max-[600px]:text-lg max-[600px]:w-full border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition"
                     >
                       <Plus className="w-6 h-6" />
                       <span>Yangi loyiha qo'shish</span>
                     </button>
                     <button
                       onClick={() => { setAdminPage('blogs'); handleAddBlog(); }}
-                      className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition"
+                      className="flex items-center gap-3 p-4 max-[600px]:py-6 max-[600px]:text-lg max-[600px]:w-full border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition"
                     >
                       <Plus className="w-6 h-6" />
                       <span>Yangi maqola yozish</span>
@@ -406,11 +480,11 @@ export default function PortfolioAdminPanel() {
 
             {adminPage === 'projects' && (
               <div>
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-8 max-[700px]:justify-start max-[700px]:gap-3">
                   <h1 className="text-3xl font-bold">Loyihalar</h1>
                   <button
                     onClick={handleAddProject}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+                    className="flex items-center gap-2 px-6 py-3 mt-2 max-[700px]:px-4 max-[700px]:py-2 max-[700px]:text-sm max-[700px]:mt-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
                   >
                     <Plus className="w-5 h-5" />
                     Yangi loyiha
@@ -501,8 +575,7 @@ export default function PortfolioAdminPanel() {
                     </div>
                   </div>
                 )}
-
-                <div className="grid grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {projects.map(project => (
                     <div key={project.id} className="bg-white rounded-xl shadow-sm overflow-hidden">
                       <img 
@@ -543,171 +616,209 @@ export default function PortfolioAdminPanel() {
               </div>
             )}
 
-            {adminPage === 'blogs' && (
-              <div>
-                <div className="flex items-center justify-between mb-8">
-                  <h1 className="text-3xl font-bold">Blog maqolalari</h1>
-                  <button
-                    onClick={handleAddBlog}
-                    className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                  >
-                    <Plus className="w-5 h-5" />
-                    Yangi maqola
-                  </button>
-                </div>
+{adminPage === 'blogs' && (
+  <div>
+    <div className="flex items-center justify-between mb-8 max-[550px]:justify-start max-[550px]:gap-1">
+      <h1 className="text-3xl font-bold ml-0 max-[480px]:text-xl">Blog maqolalari</h1>
+      <button
+        onClick={handleAddBlog}
+        className="flex items-center gap-2 px-5 py-2.5 mt-2 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 transition max-[550px]:mt-2 max-[550px]:ml-[5px] max-[480px]:px-4 max-[480px]:py-2 max-[480px]:text-xs"
+      >
+        <Plus className="w-4 h-4" />
+        Yangi maqola
+      </button>
+    </div>
 
-                {editingBlog && (
-                  <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
-                    <h2 className="text-xl font-bold mb-4">
-                      {editingBlog.title ? 'Maqolani tahrirlash' : 'Yangi maqola'}
-                    </h2>
-                    <div className="space-y-4">
-                      <input
-                        type="text"
-                        placeholder="Maqola sarlavhasi"
-                        value={editingBlog.title}
-                        onChange={(e) => setEditingBlog({...editingBlog, title: e.target.value})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                      <textarea
-                        placeholder="Qisqa tavsif"
-                        value={editingBlog.excerpt}
-                        onChange={(e) => setEditingBlog({...editingBlog, excerpt: e.target.value})}
-                        rows="2"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                      <textarea
-                        placeholder="Maqola matni"
-                        value={editingBlog.content}
-                        onChange={(e) => setEditingBlog({...editingBlog, content: e.target.value})}
-                        rows="8"
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                      
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files && e.target.files[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = () => setEditingBlog({...editingBlog, image: reader.result});
-                          reader.readAsDataURL(file);
-                        }}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg cursor-pointer"
-                      />
-                      {editingBlog.image && (
-                        <div className="mt-2">
-                          <img
-                            src={editingBlog.image}
-                            alt="Preview"
-                            className="w-full h-48 object-cover rounded-lg border"
-                            onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/640x360?text=Preview'; }}
-                          />
-                        </div>
-                      )}
-                      <input
-                        type="text"
-                        placeholder="Teglar (vergul bilan ajratilgan)"
-                        value={editingBlog.tags.join(', ')}
-                        onChange={(e) => setEditingBlog({...editingBlog, tags: e.target.value.split(',').map(t => t.trim())})}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                      <div className="flex gap-4">
-                        <button
-                          onClick={handleSaveBlog}
-                          className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-                        >
-                          <Save className="w-5 h-5" />
-                          Saqlash
-                        </button>
-                        <button
-                          onClick={() => setEditingBlog(null)}
-                          className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
-                        >
-                          Bekor qilish
-                        </button>
+    {editingBlog && (
+      <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
+        <h2 className="text-xl font-bold mb-4">
+          {editingBlog.title ? 'Maqolani tahrirlash' : 'Yangi maqola'}
+        </h2>
+        <div className="space-y-4">
+          <input
+            type="text"
+            placeholder="Maqola sarlavhasi"
+            value={editingBlog.title}
+            onChange={(e) => setEditingBlog({...editingBlog, title: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          <textarea
+            placeholder="Qisqa tavsif"
+            value={editingBlog.excerpt}
+            onChange={(e) => setEditingBlog({...editingBlog, excerpt: e.target.value})}
+            rows="2"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          <textarea
+            placeholder="Maqola matni"
+            value={editingBlog.content}
+            onChange={(e) => setEditingBlog({...editingBlog, content: e.target.value})}
+            rows="8"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          
+          <input
+            type="text"
+            placeholder="Rasm yoki video URL (YouTube/Vimeo/MP4)"
+            value={editingBlog.image}
+            onChange={(e) => setEditingBlog({...editingBlog, image: e.target.value})}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          />
+          {editingBlog.image && (
+            <div className="mt-2">
+              {isVideoUrl(editingBlog.image) ? (
+                (() => {
+                  const yt = toYouTubeEmbed(editingBlog.image);
+                  const vm = toVimeoEmbed(editingBlog.image);
+                  if (yt || vm) {
+                    const src = yt || vm;
+                    return (
+                      <div className="w-full aspect-video rounded-lg overflow-hidden border">
+                        <iframe
+                          src={src}
+                          title="Video preview"
+                          className="w-full h-full"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                          allowFullScreen
+                        />
                       </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="space-y-4">
-                  {blogs.map(blog => (
-                    <div key={blog.id} className="bg-white rounded-xl shadow-sm overflow-hidden flex">
-                      <img 
-                        src={blog.image || 'https://via.placeholder.com/640x360?text=Image'}
-                        onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/640x360?text=Image'; }} 
-                        alt={blog.title}
-                        className="w-64 h-48 object-cover"
-                      />
-                      <div className="flex-1 p-6">
-                        <div className="flex items-start justify-between mb-2">
-                          <h3 className="text-xl font-bold">{blog.title}</h3>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => setEditingBlog(blog)}
-                              className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteBlog(blog.id)}
-                              className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                        <p className="text-gray-600 mb-4">{blog.excerpt}</p>
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {blog.tags.map((tag, i) => (
-                            <span key={i} className="px-3 py-1 bg-green-100 text-green-600 text-sm rounded-full">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-4 h-4" />
-                            {blog.date}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <User className="w-4 h-4" />
-                            {blog.author}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                    );
+                  }
+                  return (
+                    <video
+                      controls
+                      src={editingBlog.image}
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                  );
+                })()
+              ) : (
+                <img
+                  src={editingBlog.image}
+                  alt="Preview"
+                  className="w-full h-48 object-cover rounded-lg border"
+                />
+              )}
+            </div>
+          )}
+          <div className="flex gap-4">
+            <button
+              onClick={handleSaveBlog}
+              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              <Save className="w-5 h-5" />
+              Saqlash
+            </button>
+            <button
+              onClick={() => setEditingBlog(null)}
+              className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            >
+              Bekor qilish
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    <div className="space-y-4">
+      {blogs.map(blog => (
+        <div key={blog.id} className="bg-white rounded-xl shadow-sm overflow-hidden flex max-[550px]:flex-col">
+          <div className="w-64 h-48 shrink-0 overflow-hidden max-[550px]:w-full">
+            {isVideoUrl(blog.image) ? (
+              (() => {
+                const yt = toYouTubeEmbed(blog.image);
+                const vm = toVimeoEmbed(blog.image);
+                if (yt || vm) {
+                  const src = yt || vm;
+                  return (
+                    <iframe
+                      src={src}
+                      title={blog.title}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                    />
+                  );
+                }
+                return (
+                  <video controls src={blog.image} className="w-full h-full object-cover" />
+                );
+              })()
+            ) : (
+              <img
+                src={blog.image || 'https://via.placeholder.com/640x360?text=Image'}
+                onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/640x360?text=Image'; }}
+                alt={blog.title}
+                className="w-full h-full object-cover"
+              />
             )}
+          </div>
+          <div className="flex-1 p-6">
+            <div className="flex items-start justify-between mb-2">
+              <h3 className="text-xl font-bold">{blog.title}</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setEditingBlog(blog)}
+                  className="p-2 bg-blue-100 text-blue-600 rounded-lg hover:bg-blue-200 transition"
+                >
+                  <Edit2 className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => handleDeleteBlog(blog.id)}
+                  className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+            <p className="text-gray-600 mb-4">{blog.excerpt}</p>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {blog.tags.map((tag, i) => (
+                <span key={i} className="px-3 py-1 bg-green-100 text-green-600 text-sm rounded-full">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <div className="flex items-center text-sm text-gray-500 gap-4 max-[550px]:gap-[5px]">
+              <span className="flex items-center gap-1">
+                <Calendar className="w-4 h-4" />
+                {blog.date}
+              </span>
+              <span className="flex items-center gap-1">
+                <User className="w-4 h-4" />
+                {blog.author}
+              </span>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
             {adminPage === 'profile' && (
               <div>
-                <div className="flex items-center justify-between mb-8">
-                  <h1 className="text-3xl font-bold">Profil sozlamalari</h1>
+                <div className="flex items-center justify-between mb-8 max-[400px]:flex-col max-[400px]:items-start max-[400px]:gap-2">
+                  <h1 className="text-2xl md:text-3xl font-bold">Profil sozlamalari</h1>
                   {!editingProfile ? (
                     <button
                       onClick={() => setEditingProfile(true)}
-                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                      className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition max-[400px]:w-full max-[400px]:mt-2"
                     >
                       <Edit2 className="w-5 h-5" />
                       Tahrirlash
                     </button>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 max-[400px]:w-full max-[400px]:flex-col max-[400px]:items-stretch">
                       <button
                         onClick={handleSaveProfile}
-                        className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+                        className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition max-[400px]:w-full"
                       >
                         <Save className="w-5 h-5" />
                         Saqlash
                       </button>
                       <button
                         onClick={() => setEditingProfile(false)}
-                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+                        className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition max-[400px]:w-full"
                       >
                         Bekor qilish
                       </button>
@@ -741,7 +852,7 @@ export default function PortfolioAdminPanel() {
                         rows="4"
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                       />
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <input
                           type="email"
                           placeholder="Email"
@@ -786,10 +897,10 @@ export default function PortfolioAdminPanel() {
                         <h3 className="text-lg font-semibold mb-2">Bio</h3>
                         <p className="text-gray-600">{profile.bio}</p>
                       </div>
-                      <div className="grid grid-cols-2 gap-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <h3 className="text-lg font-semibold mb-2">Email</h3>
-                          <p className="text-gray-600">{profile.email}</p>
+                          <p className="text-gray-600 break-all">{profile.email}</p>
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold mb-2">Telefon</h3>
@@ -1020,25 +1131,25 @@ export default function PortfolioAdminPanel() {
               <div className="absolute bottom-20 right-10 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl -z-10" />
               
               <div className="max-w-4xl mx-auto text-center">
-                <h1 className="text-6xl md:text-7xl font-bold mb-6 leading-tight">
+                <h1 className="text-6xl md:text-7xl max-[450px]:text-4xl font-bold mb-6 leading-tight">
                   {profile.name}
                 </h1>
-                <p className="text-2xl md:text-3xl text-gray-600 mb-8">
+                <p className="text-2xl md:text-3xl max-[450px]:text-xl text-gray-600 mb-8">
                   {profile.title}
                 </p>
-                <p className="text-xl text-gray-500 mb-12 max-w-2xl mx-auto">
+                <p className="text-xl max-[450px]:text-base text-gray-500 mb-12 max-[450px]:mb-8 max-w-2xl mx-auto">
                   {profile.bio}
                 </p>
                 <div className="flex flex-wrap items-center justify-center gap-4">
                   <button
                     onClick={() => setCurrentPage('projects')}
-                    className="px-8 py-4 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition font-medium text-lg"
+                    className="px-8 py-4 max-[450px]:px-6 max-[450px]:py-3 bg-gray-900 text-white rounded-xl hover:bg-gray-800 transition font-medium text-lg max-[450px]:text-base"
                   >
                     Loyihalarni ko'rish
                   </button>
                   <button
                     onClick={() => setCurrentPage('contact')}
-                    className="px-8 py-4 border-2 border-gray-900 text-gray-900 rounded-xl hover:bg-gray-900 hover:text-white transition font-medium text-lg"
+                    className="px-8 py-4 max-[450px]:px-6 max-[450px]:py-3 border-2 border-gray-900 text-gray-900 rounded-xl hover:bg-gray-900 hover:text-white transition font-medium text-lg max-[450px]:text-base"
                   >
                     Bog'lanish
                   </button>
@@ -1123,12 +1234,36 @@ export default function PortfolioAdminPanel() {
               {blogs.map(blog => (
                 <article key={blog.id} className="bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition">
                   <div className="md:flex">
-                    <img 
-                      src={blog.image || 'https://via.placeholder.com/640x360?text=Image'}
-                      onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/640x360?text=Image'; }} 
-                      alt={blog.title}
-                      className="w-full md:w-80 h-64 object-cover"
-                    />
+                    <div className="w-full md:w-80 h-64 shrink-0 overflow-hidden">
+                      {isVideoUrl(blog.image) ? (
+                        (() => {
+                          const yt = toYouTubeEmbed(blog.image);
+                          const vm = toVimeoEmbed(blog.image);
+                          if (yt || vm) {
+                            const src = yt || vm;
+                            return (
+                              <iframe
+                                src={src}
+                                title={blog.title}
+                                className="w-full h-full"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                allowFullScreen
+                              />
+                            );
+                          }
+                          return (
+                            <video controls src={blog.image} className="w-full h-full object-cover" />
+                          );
+                        })()
+                      ) : (
+                        <img
+                          src={blog.image || 'https://via.placeholder.com/640x360?text=Image'}
+                          onError={(e) => { e.currentTarget.src = 'https://via.placeholder.com/640x360?text=Image'; }}
+                          alt={blog.title}
+                          className="w-full h-full object-cover"
+                        />
+                      )}
+                    </div>
                     <div className="flex-1 p-8">
                       <h3 className="text-3xl font-bold mb-3">{blog.title}</h3>
                       <p className="text-gray-600 mb-4 text-lg">{blog.excerpt}</p>
@@ -1164,33 +1299,33 @@ export default function PortfolioAdminPanel() {
               <p className="text-xl text-gray-600">Loyihalaringiz uchun menga murojaat qiling</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-12">
+            <div className="grid md:grid-cols-2 gap-12 max-[450px]:gap-6">
               <div className="space-y-8">
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-blue-100 rounded-lg">
-                    <Mail className="w-6 h-6 text-blue-600" />
+                <div className="flex items-start gap-4 max-[450px]:gap-3">
+                  <div className="p-3 max-[450px]:p-2 bg-blue-100 rounded-lg">
+                    <Mail className="w-6 h-6 max-[450px]:w-5 max-[450px]:h-5 text-blue-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">Email</h3>
-                    <p className="text-gray-600">{profile.email}</p>
+                    <h3 className="font-semibold text-lg max-[450px]:text-base mb-1">Email</h3>
+                    <p className="text-gray-600 max-[450px]:text-sm break-all">{profile.email}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-green-100 rounded-lg">
-                    <Mail className="w-6 h-6 text-green-600" />
+                <div className="flex items-start gap-4 max-[450px]:gap-3">
+                  <div className="p-3 max-[450px]:p-2 bg-green-100 rounded-lg">
+                    <Mail className="w-6 h-6 max-[450px]:w-5 max-[450px]:h-5 text-green-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">Telefon</h3>
-                    <p className="text-gray-600">{profile.phone}</p>
+                    <h3 className="font-semibold text-lg max-[450px]:text-base mb-1">Telefon</h3>
+                    <p className="text-gray-600 max-[450px]:text-sm">{profile.phone}</p>
                   </div>
                 </div>
-                <div className="flex items-start gap-4">
-                  <div className="p-3 bg-purple-100 rounded-lg">
-                    <User className="w-6 h-6 text-purple-600" />
+                <div className="flex items-start gap-4 max-[450px]:gap-3">
+                  <div className="p-3 max-[450px]:p-2 bg-purple-100 rounded-lg">
+                    <User className="w-6 h-6 max-[450px]:w-5 max-[450px]:h-5 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg mb-1">Manzil</h3>
-                    <p className="text-gray-600">{profile.location}</p>
+                    <h3 className="font-semibold text-lg max-[450px]:text-base mb-1">Manzil</h3>
+                    <p className="text-gray-600 max-[450px]:text-sm">{profile.location}</p>
                   </div>
                 </div>
               </div>
